@@ -1,11 +1,14 @@
 import { db } from './index';
-import { villages, locations, screens, playlists, contentItems, playlistItems } from './schema';
+import { villages, locations, screens, playlists, contentItems, playlistItems, screenInteractions, screenEvents, liveDataSnapshots } from './schema';
 import crypto from 'crypto';
 
 async function main() {
   console.log('[sDorf Seeder] Starting database seeding for Andermatt Screen Network...');
 
-  // 1. Clear existing records to ensure idempotency and cleanliness
+  // 1. Clear existing records in correct topological order to prevent FOREIGN KEY constraint violations
+  await db.delete(screenInteractions);
+  await db.delete(screenEvents);
+  await db.delete(liveDataSnapshots);
   await db.delete(playlistItems);
   await db.delete(contentItems);
   await db.delete(screens);
