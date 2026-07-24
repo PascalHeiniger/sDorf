@@ -81,7 +81,7 @@ export default async function Home() {
                             </span>
                           </div>
                           <p className="text-xs text-zinc-500 font-mono">
-                            Slug: <span className="text-zinc-400">{sc.slug}</span> &bull; Program: <span className="text-zinc-400">{sc.playlistName || "Default Loop"}</span>
+                            Slug: <span className="text-zinc-400">{sc.slug}</span> &bull; Program: <span className="text-zinc-400">{sc.playlistId || "Default Loop"}</span>
                           </p>
                         </div>
 
