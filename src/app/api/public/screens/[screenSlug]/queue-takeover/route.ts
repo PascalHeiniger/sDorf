@@ -129,9 +129,11 @@ export async function POST(
       questionCategory: questionCategory || 'General',
       publicQuestion,
       publicAnswer,
+      publicDisplayReason: 'Approved by automatic safety filters',
       status: 'queued',
       queuedAt: new Date(),
       expiresAt,
+      createdAt: new Date(),
     });
 
     // Log screen event

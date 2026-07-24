@@ -51,11 +51,12 @@ export async function POST(
       .where(eq(screens.id, screen.id));
 
     // 5. Insert a screen event record to track connection frequency
+    const clientIp = req.headers.get('x-forwarded-for') || '127.0.0.1';
     await db.insert(screenEvents).values({
       id: `evt_${Math.random().toString(36).substring(2, 11)}`,
       screenId: screen.id,
       eventType: 'heartbeat',
-      eventDataJson: JSON.stringify({ ip: req.ip || '127.0.0.1', userAgent: req.headers.get('user-agent') || 'kiosk-player' }),
+      eventDataJson: JSON.stringify({ ip: clientIp, userAgent: req.headers.get('user-agent') || 'kiosk-player' }),
       createdAt: now,
     });
 

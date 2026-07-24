@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
+import QRCode from "qrcode";
 
 // Local TypeScript interfaces
 interface PlaylistCard {
@@ -54,10 +55,28 @@ export default function ScreenPlayer() {
   const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true);
   const [serverStatus, setServerStatus] = useState<"connected" | "disconnected">("connected");
   const [takeoverProgress, setTakeoverProgress] = useState<number>(100);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   // References for timing loops
   const cardTimerRef = useRef<NodeJS.Timeout | null>(null);
   const takeoverPollRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Generate scannable QR code linking dynamically to the local/live server scan redirect endpoint
+  useEffect(() => {
+    if (typeof window !== "undefined" && screenSlug) {
+      const targetUrl = `${window.location.origin}/q/${screenSlug}`;
+      QRCode.toDataURL(targetUrl, {
+        margin: 1.5,
+        width: 320,
+        color: {
+          dark: "#0a0a0a",
+          light: "#ffffff",
+        }
+      })
+      .then(url => setQrDataUrl(url))
+      .catch(err => console.error("[QR Generator] Failed to generate code:", err));
+    }
+  }, [screenSlug]);
   const departuresRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -396,35 +415,22 @@ export default function ScreenPlayer() {
             <p className="qr-badge-desc">Gibt es Fragen zum Fahrplan, Ausflugszielen, Hotels oder dem Dorf? Scannen Sie den QR-Code und stellen Sie Ihre Frage!</p>
             
             <div className="qr-visual-box">
-              {/* Secure SVG path representing clean, minimal QR layout */}
-              <svg className="qr-svg" viewBox="0 0 100 100">
-                <rect width="100" height="100" fill="white" />
-                {/* Outlines of positioning finders */}
-                <rect x="8" y="8" width="24" height="24" fill="black" />
-                <rect x="12" y="12" width="16" height="16" fill="white" />
-                <rect x="15" y="15" width="10" height="10" fill="black" />
-                
-                <rect x="68" y="8" width="24" height="24" fill="black" />
-                <rect x="72" y="12" width="16" height="16" fill="white" />
-                <rect x="75" y="15" width="10" height="10" fill="black" />
-                
-                <rect x="8" y="68" width="24" height="24" fill="black" />
-                <rect x="12" y="72" width="16" height="16" fill="white" />
-                <rect x="15" y="75" width="10" height="10" fill="black" />
-                
-                {/* Mock data pixels */}
-                <rect x="40" y="12" width="6" height="6" fill="black" />
-                <rect x="52" y="20" width="8" height="4" fill="black" />
-                <rect x="44" y="44" width="12" height="12" fill="black" />
-                <rect x="12" y="44" width="8" height="8" fill="black" />
-                <rect x="76" y="44" width="12" height="6" fill="black" />
-                <rect x="44" y="76" width="6" height="12" fill="black" />
-                <rect x="68" y="76" width="16" height="16" fill="black" />
-                <rect x="84" y="68" width="8" height="8" fill="black" />
-              </svg>
+              {qrDataUrl ? (
+                <img 
+                  src={qrDataUrl} 
+                  alt="Scannable QR Code" 
+                  style={{ width: "100%", height: "100%", borderRadius: "6px", display: "block" }} 
+                />
+              ) : (
+                <div style={{ color: "#6b7280", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                  Generiere QR-Code...
+                </div>
+              )}
             </div>
 
-            <div className="qr-domain-hint">qstn.swissdesign.me</div>
+            <div className="qr-domain-hint">
+              {typeof window !== "undefined" ? window.location.hostname : "sDorf"}
+            </div>
           </div>
         </div>
       </div>

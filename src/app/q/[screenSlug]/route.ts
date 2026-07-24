@@ -28,20 +28,21 @@ export async function GET(
     const screen = screenList[0];
 
     // 2. Log QR code scan event for analytics
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
     await db.insert(screenEvents).values({
       id: `evt_${Math.random().toString(36).substring(2, 11)}`,
       screenId: screen.id,
       eventType: 'qr_scan',
       eventDataJson: JSON.stringify({
-        ip: req.ip || 'unknown',
+        ip: clientIp,
         userAgent: req.headers.get('user-agent') || 'unknown',
         referer: req.headers.get('referer') || 'direct',
       }),
       createdAt: now,
     });
 
-    // 3. Generate short-lived (60s) HMAC signed context token
-    const expiresAt = Date.now() + 60 * 1000; // 60 seconds from now
+    // 3. Generate short-lived HMAC signed context token (10 minutes for relaxed local testing)
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
     const payload = JSON.stringify({ screenSlug: screen.slug, expiresAt });
     const secret = process.env.SHARED_SIGNING_SECRET || DEFAULT_SECRET;
 
@@ -54,8 +55,10 @@ export async function GET(
     const tokenPayloadBase64 = Buffer.from(payload).toString('base64');
     const signedToken = `${tokenPayloadBase64}.${signature}`;
 
-    // 4. Redirect to QSTN mobile question interface
-    const qstnAppUrl = process.env.QSTN_APP_URL || 'http://localhost:3001';
+    // 4. Redirect to QSTN mobile question interface (dynamically matching host IP so physical phone scans redirect to port 3001 on the Mac)
+    const requestUrl = new URL(req.url);
+    const host = requestUrl.hostname; // e.g. 'localhost' or '192.168.1.134'
+    const qstnAppUrl = process.env.QSTN_APP_URL || `http://${host}:3001`;
     const redirectUrl = `${qstnAppUrl}/qstn/s/${screen.slug}?token=${signedToken}`;
 
     console.log(`[sDorf Redirect] Screen QR scanned for ${screen.slug}. Issuing short-lived token and redirecting to QSTN.`);
