@@ -58,7 +58,15 @@ export async function GET(
     // 4. Redirect to QSTN mobile question interface (dynamically matching host IP so physical phone scans redirect to port 3001 on the Mac)
     const requestUrl = new URL(req.url);
     const host = requestUrl.hostname; // e.g. 'localhost' or '192.168.1.134'
-    const qstnAppUrl = process.env.QSTN_APP_URL || `http://${host}:3001`;
+    
+    let qstnAppUrl = process.env.QSTN_APP_URL;
+    if (!qstnAppUrl) {
+      if (host === 'localhost' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('127.0.')) {
+        qstnAppUrl = `http://${host}:3001`;
+      } else {
+        qstnAppUrl = 'https://qstn.andermatt.design';
+      }
+    }
     const redirectUrl = `${qstnAppUrl}/qstn/s/${screen.slug}?token=${signedToken}`;
 
     console.log(`[sDorf Redirect] Screen QR scanned for ${screen.slug}. Issuing short-lived token and redirecting to QSTN.`);
