@@ -43,7 +43,7 @@ export async function POST(
     }
 
     // 2. Validate parameters
-    const { qstnInteractionId, questionCategory, publicQuestion, publicAnswer } = body;
+    const { qstnInteractionId, questionCategory, publicQuestion, publicAnswer, publicDisplayReason } = body;
     if (!qstnInteractionId || !publicQuestion || !publicAnswer) {
       return NextResponse.json({ error: 'Missing required takeover fields' }, { status: 400 });
     }
@@ -129,7 +129,7 @@ export async function POST(
       questionCategory: questionCategory || 'General',
       publicQuestion,
       publicAnswer,
-      publicDisplayReason: 'Approved by automatic safety filters',
+      publicDisplayReason: publicDisplayReason || body.reasonCode || 'Approved by QSTN',
       status: 'queued',
       queuedAt: new Date(),
       expiresAt,

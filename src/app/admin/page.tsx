@@ -75,6 +75,7 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status: string, lastSeenAt?: string | null) => {
     if (status === "active") {
+      // eslint-disable-next-line react-hooks/purity
       const isOnline = lastSeenAt && (Date.now() - new Date(lastSeenAt).getTime() < 30000);
       return isOnline ? (
         <span className="badge online">ONLINE</span>

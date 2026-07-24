@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { screens, screenInteractions } from '@/db/schema';
-import { eq, and, gt, asc, or, lt } from 'drizzle-orm';
+import { eq, and, gt, asc, or, lt, isNull } from 'drizzle-orm';
 
 export async function GET(
   req: NextRequest,
@@ -52,7 +52,7 @@ export async function GET(
           eq(screenInteractions.status, 'queued'),
           or(
             gt(screenInteractions.expiresAt, now),
-            eq(screenInteractions.expiresAt, null as any) // Null check in Drizzle SQlite is handled by isnull, or we compare with gt
+            isNull(screenInteractions.expiresAt)
           )
         )
       )

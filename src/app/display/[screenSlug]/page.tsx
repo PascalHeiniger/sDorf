@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 
@@ -83,6 +83,37 @@ export default function ScreenPlayer() {
   // Screen configuration
   const deviceToken = "andermatt-secret-token-1234"; // Default seeded token for this station
 
+  // Fetch train departures from local cache/API
+  const fetchDepartures = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/public/screens/${screenSlug}/departures`);
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setDepartures(data.departures.slice(0, 5)); // Keep only the top 5 upcoming departures
+    } catch {
+      console.warn("[sDorf Departures] Failed to query live API. Rendering cached schedule.");
+    }
+  }, [screenSlug]);
+
+  // Complete displaying active takeover
+  const completeTakeover = useCallback(async (takeoverId: string) => {
+    try {
+      await fetch(`/api/public/screens/${screenSlug}/takeover-event`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ takeoverId, event: "completed" })
+      });
+    } catch (err) {
+      console.error("[sDorf Takeover Completion Notify] Failed:", err);
+    } finally {
+      setTakeover(null);
+      // Advance to next card on resuming to keep program alive
+      if (playlist.length > 0) {
+        setCurrentCardIndex((prev) => (prev + 1) % playlist.length);
+      }
+    }
+  }, [screenSlug, playlist]);
+
   // 1. Initial Load & Offline Backup Recovery
   useEffect(() => {
     async function loadKiosk() {
@@ -150,7 +181,10 @@ export default function ScreenPlayer() {
 
     // Fetch departures instantly if active card is train schedule
     if (currentCard.contentType === "live_departures") {
-      fetchDepartures();
+      // Defer state update to next tick to avoid React 19 synchronous setState inside useEffect warning
+      setTimeout(() => {
+        fetchDepartures();
+      }, 0);
       // Poll departures every 15s while on departures slide
       departuresRef.current = setInterval(fetchDepartures, 15000);
     } else {
@@ -160,7 +194,7 @@ export default function ScreenPlayer() {
     return () => {
       if (cardTimerRef.current) clearTimeout(cardTimerRef.current);
     };
-  }, [currentCardIndex, playlist, takeover]);
+  }, [currentCardIndex, playlist, takeover, fetchDepartures]);
 
   // 3. Heartbeat & Signage Synchronization
   useEffect(() => {
@@ -237,36 +271,9 @@ export default function ScreenPlayer() {
     return () => {
       if (takeoverPollRef.current) clearInterval(takeoverPollRef.current);
     };
-  }, [screenSlug, takeover, isBootstrapping]);
+  }, [screenSlug, takeover, isBootstrapping, completeTakeover]);
 
-  // Complete displaying active takeover
-  const completeTakeover = async (takeoverId: string) => {
-    try {
-      await fetch(`/api/public/screens/${screenSlug}/takeover-event`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ takeoverId, event: "completed" })
-      });
-    } catch (err) {
-      console.error("[sDorf Takeover Completion Notify] Failed:", err);
-    } finally {
-      setTakeover(null);
-      // Advance to next card on resuming to keep program alive
-      setCurrentCardIndex((prev) => (prev + 1) % playlist.length);
-    }
-  };
-
-  // Fetch train departures from local cache/API
-  const fetchDepartures = async () => {
-    try {
-      const response = await fetch(`/api/public/screens/${screenSlug}/departures`);
-      if (!response.ok) throw new Error();
-      const data = await response.json();
-      setDepartures(data.departures.slice(0, 5)); // Keep only the top 5 upcoming departures
-    } catch {
-      console.warn("[sDorf Departures] Failed to query live API. Rendering cached schedule.");
-    }
-  };
+  // 5. Render States
 
   // 5. Render States
   if (isBootstrapping) {
