@@ -5,6 +5,7 @@ export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./src/db/migrations",
   dbCredentials: {
-    url: "file:sdorf.db",
+    url: process.env.DATABASE_URL || "file:sdorf.db",
+    authToken: process.env.DATABASE_AUTH_TOKEN,
   },
 });
