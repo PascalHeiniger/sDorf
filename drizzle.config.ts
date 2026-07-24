@@ -7,5 +7,5 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL || "file:sdorf.db",
     authToken: process.env.DATABASE_AUTH_TOKEN,
-  },
+  } as any,
 });
