@@ -4,6 +4,8 @@ import crypto from 'crypto';
 
 async function main() {
   console.log('[sDorf Seeder] Starting database seeding for Andermatt Screen Network...');
+  console.log('[Diagnostic] DATABASE_URL is:', process.env.DATABASE_URL ? '✅ Loaded' : '❌ NOT LOADED');
+  console.log('[Diagnostic] DATABASE_AUTH_TOKEN is:', process.env.DATABASE_AUTH_TOKEN ? `✅ Loaded (Length: ${process.env.DATABASE_AUTH_TOKEN.length})` : '❌ NOT LOADED');
 
   // 1. Clear existing records in correct topological order to prevent FOREIGN KEY constraint violations
   await db.delete(screenInteractions);
